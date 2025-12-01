@@ -1,0 +1,289 @@
+﻿/**
+• Views 
+• CTE 
+• Programming 
+• Ranking 
+**/
+
+-----------------------------------------------Employee table-----------------------------------------------------
+CREATE TABLE Employees 
+( 
+    EmpId INT PRIMARY KEY, 
+    EmpName VARCHAR(100), 
+    DeptId INT, 
+    ManagerId INT NULL, 
+    JoinDate DATE, 
+    Salary DECIMAL(10,2) 
+); 
+ 
+INSERT INTO Employees VALUES 
+(1, 'Amit', 10, NULL, '2020-01-10', 65000), 
+(2, 'Neha', 10, 1,    '2022-02-15', 50000), 
+(3, 'Ravi', 20, 1,    '2023-03-12', 45000), 
+(4, 'Sana', 20, 3,    '2024-01-20', 42000), 
+(5, 'Karan', 30, 1,   '2021-07-18', 55000); 
+
+select * from Employees;
+
+-------------------------------------------Department table----------------------------------------------------
+
+CREATE TABLE Departments 
+( 
+    DeptId INT PRIMARY KEY, 
+    DeptName VARCHAR(100) 
+); 
+ 
+INSERT INTO Departments VALUES 
+(10, 'IT'), 
+(20, 'HR'), 
+(30, 'Finance');
+
+select * from Departments;
+
+--------------------------------------------------- sales table-----------------------------------------------------------
+CREATE TABLE Sales 
+( 
+    SaleId INT PRIMARY KEY, 
+    EmpId INT, 
+    Region VARCHAR(50), 
+    SaleAmount DECIMAL(10,2), 
+    SaleDate DATE 
+); 
+ 
+INSERT INTO Sales VALUES 
+(1, 1, 'North', 100000, '2024-01-01'), 
+(2, 2, 'North',  90000, '2024-01-10'), 
+(3, 3, 'South', 120000, '2024-02-05'), 
+(4, 4, 'South', 120000, '2024-02-20'), 
+(5, 5, 'North', 110000, '2024-03-15'); 
+
+select * from sales;
+
+-------------------------------------------------Transactions table-------------------------------------------------
+
+CREATE TABLE Transactions 
+( 
+    TransId INT PRIMARY KEY, 
+    AccountId INT, 
+    Amount DECIMAL(10,2), 
+    TransDate DATE 
+); 
+ 
+INSERT INTO Transactions VALUES 
+(1, 101, 1000, '2024-01-01'), 
+(2, 101, 2000, '2024-02-01'), 
+(3, 101, -500, '2024-03-01'), 
+(4, 102, 1500, '2024-01-15'), 
+(5, 102, -200, '2024-03-10');
+
+select * from Transactions;
+
+----------------------------------------------------------------------------------------------------------------------
+
+select * from Employees;
+select * from Departments;
+select * from sales;
+select * from Transactions;
+
+/**
+Write a query using CASE to categorize salary levels on Employees table: 
+• <20000 → Low 
+• 20000–50000 → Medium 
+• 50000 → High
+**/
+
+select Empid,empname,salary,
+case
+when salary<20000 then 'Low'
+when salary between 20000 and 50000 then 'Medium'
+else 'High'
+end as Salary_Level
+from employees;
+
+/**
+Declare a variable @Age. 
+Write logic using IF / ELSE: 
+• If Age < 18 → print “Minor” 
+• Else If Age between 18–60 → “Adult” 
+• Else → “Senior”
+**/
+
+declare @age int
+set @age = 50
+if (@age<18)
+print 'Minor'
+else if(@age between 18 and 60)
+print 'Adult'
+else
+print 'Senior';
+
+/**
+Create an encrypted and schemabound view that: 
+• Joins Employees, Departments, and Salaries tables 
+• Returns only employees who joined in the last 3 years 
+• Includes computed column: AnnualSalary = Salary * 12 
+• Prevents updates to base tables that break schema binding 
+Tasks 
+1. Create the view with WITH SCHEMABINDING, ENCRYPTION. 
+2. Try altering an underlying table column → observe the error.
+**/
+
+
+select * from Employees;
+select * from Departments;
+select * from sales;
+select * from Transactions;
+
+
+create view employeeview with encryption,
+schemabinding as
+select e.Empid,e.empname,e.salary,e.salary*12 as Annualsalary,d.deptname from dbo.employees as e
+join dbo.Departments as d
+on
+e.DeptId=d.DeptId
+where e.joindate>= dateadd(year, -3, getdate())
+with check option;
+
+/**
+Create a view that: 
+• Joins Employees + Sales 
+• Shows total sales per employee 
+• Shows rank based on total sales across company
+**/
+
+select * from Employees;
+select * from Departments;
+select * from sales;
+select * from Transactions;
+
+select sum(s.saleamount) as totalsales,e.empname,
+rank()over(order by sum(s.saleamount) desc) as rankbytotalsales from employees as e
+join sales as s
+on 
+e.empid=s.empid
+group by e.EmpName;
+
+/**
+Task-5— Simulate Error Capture 
+Write a block that: 
+• Attempts dividing by zero 
+• Catches the error 
+• Prints error details
+**/
+begin try
+declare @a int
+set @a=10
+print @a/0
+end try
+begin catch
+print 'you can not devide by 0' --by user
+print error_message() -- build in
+end catch;
+
+/**
+Task-6— Nested TRY…CATCH With Custom Error 
+Validate salary: 
+• If salary < 1000, throw custom error using THROW. 
+• Declare variable  to simulate salary
+**/
+
+begin try
+declare @salary int
+set @salary =200
+if(@salary<1000)
+begin
+throw 50001,'not valid',1
+end
+print 'salary not valid'
+end try
+begin catch
+    print error_message();
+end catch;
+
+/**
+Task-7— Rank Employees by Region Sales 
+Task 
+• Compare Rank / Dense_Rank / Row_Number 
+• Identify top 2 per region
+**/
+
+select * from Employees;
+select * from Departments;
+select * from sales;
+select * from Transactions;
+
+
+with cte1 as(select Empid,Region,SaleAmount,
+rank()over(partition by region order by saleamount desc) as compare_rank,
+dense_rank()over(partition by region order by saleamount desc) as Denserank,
+row_number()over(partition by region order by saleamount desc) as rankbyrow
+from sales
+)
+select saleamount,region,compare_rank,denserank,rankbyrow from cte1
+where compare_rank<=2 or denserank<=2 or rankbyrow<=2
+order by saleamount desc
+
+
+/**
+Task-8 -Using Sales table: 
+• First CTE: Filter only last 1 year sales 
+• Second CTE: Compute total sales per region 
+• Third CTE: Rank regions based on total sales 
+• Output top 3 regions
+**/
+
+select * from sales;
+
+with cte1 as
+(
+select * from sales
+WHERE SaleDate >= DATEADD(year, -1, CAST(GETDATE() AS date))
+),
+cte2 as
+(
+select region,sum(saleamount) as total from cte1
+group by region
+),
+cte3 as
+(
+select region,total,row_number()over(order by total desc) as ranked from cte2
+)
+select region,total from cte3
+where ranked<=3
+order by total desc;
+
+-- Task-8 Find Employees With Duplicate SalesAmount in Any Department
+
+select * from Employees;
+select * from Departments;
+select * from sales;
+
+with cte1 as 
+(
+select distinct d.deptid,d.deptname,e.empid,e.empname,s.saleamount from employees as e
+join sales as s
+on e.EmpId=s.EmpId
+join Departments as d
+on e.DeptId=d.DeptId
+),
+cte2 as
+(
+select deptid,SaleAmount,count(distinct empid) as empcount from cte1
+group by deptid,saleamount
+having count(distinct empid)>1
+)
+select c1.deptid,c1.deptname,c1.empid,c1.empname,c1.saleamount from cte1 as c1
+join cte2 as c2
+on c1.DeptId=c2.DeptId
+and c1.SaleAmount=c2.SaleAmount
+order by c1.DeptId,c1.saleamount,c1.empid;
+
+-- Task – 9 Perform Pagination and list all details from employees who’s page between 6 and 10
+
+with cte1 as
+(
+select *,row_number()over(order by empid) as ranking from Employees
+)
+select * from cte1
+where ranking between 3 and 10
+order by ranking;
