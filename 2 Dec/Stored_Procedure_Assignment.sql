@@ -170,7 +170,7 @@ Create spSafeOrderInsert
 • If any error occurs, insert error details into an ErrorLog table 
 **/
 
-select * from Orders;
+select * from purchase;
 
 create table errorlog (
     errorid int identity(1,1) primary key,
@@ -180,11 +180,11 @@ create table errorlog (
 select * from errorlog;
 
 alter procedure spSafeOrderInsert 
-(@custid int,@orderid int,@orderdate date,@product varchar(20),@price float,@qty int)
+(@productid int,@purchasedate date,@serialno int,@price decimal(10,2),@qty int)
 as
 begin
 begin try
-insert into Orders values(@custid,@orderid,@orderdate,@product,@price,@qty)
+insert into purchase values(@productid,@purchasedate,@serialno,@price,@qty)
 print 'values inserted in table'
 end try
 begin catch
@@ -194,22 +194,8 @@ print 'error occured . msg insert into log table'
 end catch
 end
 
-exec spSafeOrderInsert 13,1007,'2025-12-01','keyboard',2
-
-create table ErrorLog ( ErrorID int identity(1,1) primary key, ErrorMessage varchar(1000), ErrorNumber int, ErrorLine int, ErrorDate datetime default getdate() ) 
-create procedure spSafeOrderInsert (@custid int,@orderid int,@orderdate date,@qty int,@prod_id int) as  
-begin  
-begin try  
-insert into orders values(@custid,@orderid,@orderdate,@qty,@prod_id)  
-end try  
-begin catch  
-insert into ErrorLog (ErrorMessage, ErrorNumber, ErrorLine) values (error_message(),error_number(),error_line())  
-print 'error occured'  
-end catch  
-end 
-EXEC spSafeOrderInsert 110, 1010, '2024-12-01', 5, 202;  
-EXEC spSafeOrderInsert 110, 1010;  
-select * from ErrorLog 
+exec spSafeOrderInsert 4,'2025-12-01',1004,3000,3
+exec spSafeOrderInsert 4,'2025-12-01',1004,3000,3
 
 /**
 10.Stored procedure with multiple operations 
