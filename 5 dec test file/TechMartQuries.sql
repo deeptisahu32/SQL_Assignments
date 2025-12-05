@@ -444,7 +444,7 @@ instead of delete
 as
 begin
 update Orders
-set o.status='Inactive'
+set status='Inactive'
 from Orders as o
 join deleted as d
 on o.CustID=d.CustID
@@ -463,6 +463,10 @@ delete from customers
 where custid in(1,6);
 
 select * from customers;
+
+select * from customers where custid in (1,6);
+
+select orderid,custid,status from orders where custid in(1,6);
 
 
 
